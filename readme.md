@@ -24,18 +24,16 @@ sudo dnf install SDL2-devel glew-devel
 
 # Arch Linux
 sudo pacman -S sdl2 glew
+```
 
 ## Compilation 
-g++ main.cpp -o a_star -lSDL2 -lGL -lGLEW -lGLU
+```g++ main.cpp -o a_star -lSDL2 -lGL -lGLEW -lGLU```
 
 ## Usage 
-./a_star 
+```./a_star ```
 
 ## Controls
 Left Click: Set start, end, and barriers
 Right Click: Reset cells
 Spacebar: Run algorithm
 C Key: Clear grid
-
-
-
