@@ -37,8 +37,8 @@ struct Spot {
 	Spot(int r, int c) {
 		row = r;
 		col = c;
-		x = c * GAP;  // Fix: use col instead of row
-		y = r * GAP;  // Fix: use row instead of col
+		x = c * GAP;
+		y = r * GAP;
 		color = WHITE;
 	}
 
@@ -285,10 +285,10 @@ int main(int argc, char* argv[]) {
 		return 1;
 	}
 
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	gluOrtho2D(0.0, WIDTH, WIDTH, 0.0);
+	// glMatrixMode(GL_PROJECTION);
+	// glLoadIdentity();
 	glMatrixMode(GL_MODELVIEW);
+	gluOrtho2D(0.0, WIDTH, WIDTH, 0.0);
 
 	auto grid = make_grid(ROWS);
 	Spot* start = nullptr;
