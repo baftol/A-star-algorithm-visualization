@@ -151,23 +151,30 @@ struct Spot {
 int heuristic(const std::pair<int, int>& p1, const std::pair<int, int>& p2) {
 	return abs(p1.first - p2.first) + abs(p1.second - p2.second);
 }
-
-void reconstruct_path(std::unordered_map<Spot*, Spot*>& came_from, Spot* current, Spot* start, std::function<void()> draw) {
-	while(came_from.find(current) != came_from.end()) {
-		if(current != start) {	// Ensure the start cell remains orange
-			current->make_path();
+void clear_previous_path(std::vector<std::vector<Spot>>& grid, std::function<void()> draw) {
+	for(auto& row : grid) {
+		for(auto& spot : row) {
+			if(spot.color != ORANGE && spot.color != TURQUOISE && spot.color != BLACK) {
+				spot.reset();
+			}
 		}
+	}
+	draw();
+}
+void reconstruct_path(std::unordered_map<Spot*, Spot*>& came_from, Spot* current, Spot* start, std::function<void()> draw) {
+	while(current != start) {
+		current->make_path();
 		current = came_from[current];
 		draw();
 	}
 }
 
 bool algorithm(std::function<void()> draw, std::vector<std::vector<Spot>>& grid, Spot* start, Spot* end) {
-	std::priority_queue<std::tuple<int, int, Spot*>, std::vector<std::tuple<int, int, Spot*>>, std::greater<std::tuple<int, int, Spot*>>> open_set;
-	open_set.emplace(0, 0, start);
+	std::priority_queue<std::tuple<int, int, Spot*>> open_set;
 	std::unordered_map<Spot*, Spot*> came_from;
 	std::unordered_map<Spot*, int> g_score;
 	std::unordered_map<Spot*, int> f_score;
+	std::unordered_map<Spot*, int> vis;
 
 	for(auto& row : grid) {
 		for(auto& spot : row) {
@@ -177,15 +184,16 @@ bool algorithm(std::function<void()> draw, std::vector<std::vector<Spot>>& grid,
 	}
 	g_score[start] = 0;
 	f_score[start] = heuristic(start->get_pos(), end->get_pos());
-
-	std::unordered_set<Spot*> open_set_hash;
-	open_set_hash.insert(start);
+	open_set.emplace(-f_score[start], -g_score[start], start);
 
 	while(!open_set.empty()) {
 		Spot* current = std::get<2>(open_set.top());
+		int f_s = -std::get<0>(open_set.top());
 		open_set.pop();
-		open_set_hash.erase(current);
-
+		if(vis.find(current) != vis.end() || f_s != f_score[current]) {
+			continue;
+		}
+		vis[current] = 1;
 		if(current == end) {
 			reconstruct_path(came_from, end, start, draw);
 			end->make_end();
@@ -199,11 +207,8 @@ bool algorithm(std::function<void()> draw, std::vector<std::vector<Spot>>& grid,
 				came_from[neighbor] = current;
 				g_score[neighbor] = temp_g_score;
 				f_score[neighbor] = temp_g_score + heuristic(neighbor->get_pos(), end->get_pos());
-				if(open_set_hash.find(neighbor) == open_set_hash.end()) {
-					open_set.emplace(f_score[neighbor], g_score[neighbor], neighbor);
-					open_set_hash.insert(neighbor);
-					neighbor->make_open();
-				}
+				open_set.emplace(-f_score[neighbor], -g_score[neighbor], neighbor);
+				neighbor->make_open();
 			}
 		}
 		draw();
@@ -256,7 +261,7 @@ int main(int argc, char* argv[]) {
 		return 1;
 	}
 
-	SDL_Window* win = SDL_CreateWindow("A* Path Finding Algorithm", 100, 100, WIDTH, WIDTH, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
+	SDL_Window* win = SDL_CreateWindow("A* Path Finding Algorithm", 100, 100, WIDTH, WIDTH, SDL_WINDOW_OPENGL);
 	if(win == nullptr) {
 		std::cerr << "SDL_CreateWindow Error: " << SDL_GetError() << std::endl;
 		SDL_Quit();
@@ -331,6 +336,7 @@ int main(int argc, char* argv[]) {
 							spot.update_neighbors(grid);
 						}
 					}
+					clear_previous_path(grid, [&]() { draw(grid); });
 					algorithm([&]() { draw(grid); }, grid, start, end);
 				}
 
